@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Life</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Life">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#000;--card:#0D0D0D;--line:#1F1F1F;--text:#F4F4F4;--muted:#A0A0A0;--acc:#38BDF8;--acc2:#7DD3FC;--dim:#5A5A5A}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif}
+body{min-height:100dvh}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
+input{font:inherit}
+#app{max-width:430px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 20px) 20px calc(100px + env(safe-area-inset-bottom))}
+.head{display:flex;align-items:baseline;justify-content:space-between;min-height:44px}
+.logo{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.date{font-size:14px;color:var(--muted)}
+.card{background:var(--card);border-radius:20px;padding:16px;margin-top:14px}
+.row2{display:flex;gap:12px;margin-top:14px}
+.row2 .card{flex:1;min-width:0;margin-top:0}
+.lbl{font-size:13px;color:var(--muted)}
+.big{font-size:32px;font-weight:700;letter-spacing:-1px;margin-top:6px;line-height:1.2}
+.small{font-size:12px;color:var(--muted);margin-top:8px}
+.segs{display:flex;gap:4px;margin-top:10px}
+.segs i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.segs i.on{background:var(--acc)}
+.bar{height:6px;border-radius:3px;background:var(--line);margin-top:10px}
+.bar b{display:block;height:6px;border-radius:3px;background:var(--acc2)}
+.cardbtn{display:block;width:100%;text-align:left}
+.ctitle{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.ctitle h2{margin:0;font-size:16px;font-weight:600}
+.ctitle span{font-size:12px;color:var(--muted)}
+.task{display:flex;align-items:center;gap:12px;min-height:46px;border-top:1px solid var(--line)}
+.task:first-of-type{border-top:none}
+.chk{width:44px;height:44px;margin:-10px -10px -10px -10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chk span{width:24px;height:24px;border-radius:12px;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center}
+.chk.on span{background:var(--acc);border-color:var(--acc)}
+.task .tx{flex:1;font-size:15px;font-weight:500;min-width:0;overflow-wrap:anywhere}
+.task.done .tx{color:var(--muted);text-decoration:line-through;font-weight:400}
+.task .tm{font-size:13px;color:var(--muted)}
+.empty{font-size:14px;color:var(--muted);padding:12px 0 16px}
+.wk{display:grid;grid-template-columns:88px repeat(7,minmax(0,1fr));align-items:center}
+.wk.h{height:22px}
+.wk.h div{text-align:center;font-size:11px;color:var(--muted)}
+.wk.h div.today{font-weight:700;color:var(--text)}
+.wk .name{font-size:13px;text-align:left;min-height:34px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:6px}
+.cell{height:34px;display:flex;align-items:center;justify-content:center}
+.dot{width:18px;height:18px;border-radius:9px;border:2px solid var(--line)}
+.dot.miss{border-color:var(--dim)}
+.dot.ok{background:var(--acc);border-color:var(--acc)}
+.addh{margin-top:6px;font-size:13px;color:var(--muted);min-height:44px}
+.wsum{font-size:13px;color:var(--muted)}
+.wsum b{color:var(--text)}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+.tabs div{max-width:430px;margin:0 auto;height:72px;display:flex;justify-content:space-around;align-items:center}
+.tab{min-height:44px;padding:0 24px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:6px}
+.tab i{width:24px;height:3px;border-radius:2px;background:transparent}
+.tab.on{color:var(--text);font-weight:600}
+.tab.on i{background:var(--acc)}
+.fabwrap{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:430px;bottom:calc(84px + env(safe-area-inset-bottom));pointer-events:none;z-index:25}
+.fab{pointer-events:auto;position:absolute;right:20px;bottom:0;width:56px;height:56px;border-radius:28px;background:var(--acc);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(56,189,248,.25)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.sheet{width:100%;max-width:430px;background:#111;border-radius:24px 24px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 16px;font-size:20px}
+.screen{position:fixed;inset:0;background:var(--bg);z-index:40;overflow:auto}
+.screen .in{max-width:430px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 12px) 20px calc(28px + env(safe-area-inset-bottom));min-height:100%;display:flex;flex-direction:column}
+.cancel{min-height:44px;color:var(--muted);font-size:15px;align-self:flex-start}
+.ttl{font-size:28px;font-weight:700;letter-spacing:-.5px;margin:4px 0 0}
+.seg{display:flex;gap:4px;padding:4px;border-radius:16px;background:var(--card);margin-top:20px}
+.seg button{flex:1;min-height:44px;border-radius:12px;font-size:15px;color:var(--muted)}
+.seg button.on{background:var(--acc);color:#000;font-weight:700}
+.seg.sub button.on{background:#1C1C1C;color:var(--text);font-weight:600}
+.flabel{font-size:13px;color:var(--muted);margin-top:20px;display:block}
+.inp{width:100%;height:56px;margin-top:8px;padding:0 16px;border-radius:16px;background:var(--card);border:2px solid var(--acc);color:var(--text);font-size:17px;outline:none}
+.inp.plain{border-color:var(--line)}
+.wheel{position:relative;display:flex;height:220px;margin-top:12px;padding:0 8px;border-radius:20px;background:var(--card);overflow:hidden}
+.wheel .band{position:absolute;left:8px;right:8px;top:88px;height:44px;border-radius:12px;background:#1C1C1C;pointer-events:none}
+.col{position:relative;z-index:1;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.col::-webkit-scrollbar{display:none}
+.col .sp{height:88px}
+.col .it{height:44px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#6A6A6A;scroll-snap-align:center;scroll-snap-stop:always}
+.col .it.sel{font-size:22px;font-weight:600;color:var(--text)}
+.colon{position:relative;z-index:1;width:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600}
+.hint{font-size:13px;color:var(--muted);margin-top:12px;text-align:center}
+.primary{margin-top:auto;min-height:56px;border-radius:18px;background:var(--acc);color:#000;font-size:17px;font-weight:700;width:100%}
+.spacer{flex:1;min-height:20px}
+.chips{display:flex;gap:6px;margin:4px 0 20px}
+.chips button{flex:1;min-height:44px;border-radius:12px;background:var(--card);color:var(--muted);font-size:15px}
+.chips button.on{background:var(--acc);color:#000;font-weight:700}
+.btnrow{display:flex;gap:10px;margin-top:8px}
+.btnrow button{flex:1;min-height:52px;border-radius:16px;font-size:16px;background:var(--card)}
+.btnrow .go{background:var(--acc);color:#000;font-weight:700}
+.btnrow .del{color:#FF6B6B}
+.banner{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:20px;padding:14px 16px;margin-top:14px;font-size:14px;line-height:1.35}
+.banner button{background:var(--acc);color:#000;font-weight:700;border-radius:12px;min-height:44px;padding:0 16px;flex-shrink:0}
+.rem{display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid var(--line)}
+.rem:first-child{border-top:none}
+.rem .tx{flex:1;min-width:0;font-size:15px;font-weight:500;overflow-wrap:anywhere}
+.rem .sub{font-size:13px;color:var(--muted);margin-top:2px;font-weight:400}
+.rem.past .tx{color:var(--muted)}
+.rem .x{width:44px;height:44px;margin-right:-10px;color:var(--muted);font-size:22px;line-height:1}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translate(-50%,-140%);transition:transform .25s;background:#1A1A1A;border:1px solid #2A2A2A;border-radius:16px;padding:12px 18px;font-size:15px;max-width:90%;z-index:90;text-align:center}
+.toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="fabwrap"><button class="fab" data-act="fab" aria-label="Новое напоминание"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+<nav class="tabs"><div>
+<button class="tab on" id="tab-home" data-act="tab" data-v="home"><i></i>Сегодня</button>
+<button class="tab" id="tab-rem" data-act="tab" data-v="rem"><i></i>Напоминания</button>
+</div></nav>
+<div id="layer"></div>
+<div id="toast" class="toast" role="status"></div>
+<script>
+(function () {
+'use strict';
+var NORM = 10000;
+var STORE = 'life.v1';
+var DAYS = ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'];
+var DAYFULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+var WD = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+var WDFULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+var MON = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+var MONFULL = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+var CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function $(s) { return document.querySelector(s); }
+function p2(n) { return String(n).padStart(2, '0'); }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function key(d) { return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); }
+function hhmm(d) { return p2(d.getHours()) + ':' + p2(d.getMinutes()); }
+function dayIdx(d) { return (d.getDay() + 6) % 7; }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function addDays(d, n) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); return x; }
+
+function load() {
+  try {
+    var s = JSON.parse(localStorage.getItem(STORE));
+    if (s && s.habits) return s;
+  } catch (e) {}
+  return {
+    habits: [
+      { id: 'h1', name: 'Спортзал', days: [1, 1, 1, 1, 1, 0, 0] },
+      { id: 'h2', name: 'Сон вовремя', days: [1, 1, 1, 1, 1, 1, 1] },
+      { id: 'h3', name: 'Английский', days: [1, 1, 1, 1, 1, 1, 1] }
+    ],
+    reminders: [], done: {}, habitDone: {}, steps: {}, fired: {}
+  };
+}
+var state = load();
+function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+
+var view = 'home';
+var newS = null;
+var habitTmp = null;
+
+/* ---------- данные дня ---------- */
+function todayItems() {
+  var k = key(new Date());
+  return state.reminders.filter(function (r) {
+    return r.kind === 'daily' || (r.kind === 'once' && key(new Date(r.at)) === k);
+  }).map(function (r) {
+    return { r: r, time: r.kind === 'daily' ? r.time : hhmm(new Date(r.at)) };
+  }).sort(function (a, b) { return a.time.localeCompare(b.time); });
+}
+function fmtRem(r) {
+  if (r.kind === 'daily') return 'Каждый день в ' + r.time;
+  var d = new Date(r.at), t = new Date();
+  var when = key(d) === key(t) ? 'Сегодня' : (key(d) === key(addDays(t, 1)) ? 'Завтра' : WD[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]);
+  return when + ' в ' + hhmm(d);
+}
+function fmtSteps(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+
+/* ---------- главный экран ---------- */
+function homeHTML() {
+  var now = new Date(), k = key(now), items = todayItems();
+  var total = items.length;
+  var doneN = items.filter(function (i) { return state.done[k + '|' + i.r.id]; }).length;
+  var steps = state.steps[k] || 0, pct = Math.min(100, Math.round(steps / NORM * 100));
+  var segs = '', n = Math.min(total, 12), onN = total <= 12 ? doneN : Math.round(doneN / total * n);
+  for (var i = 0; i < n; i++) segs += '<i class="' + (i < onN ? 'on' : '') + '"></i>';
+  if (!n) segs = '<i></i>';
+  var left = total === 0 ? 'задач нет' : (doneN === total ? 'всё сделано' : 'осталось ' + (total - doneN));
+
+  var h = '<div class="head"><div class="logo">Life</div><div class="date">' + WDFULL[now.getDay()] + ', ' + now.getDate() + ' ' + MONFULL[now.getMonth()] + '</div></div>';
+  h += bannerHTML();
+  h += '<div class="row2">';
+  h += '<div class="card"><div class="lbl">Задачи сегодня</div><div class="big">' + (total ? doneN + ' из ' + total : '0') + '</div><div class="segs">' + segs + '</div><div class="small">' + left + '</div></div>';
+  h += '<button class="card cardbtn" data-act="steps"><div class="lbl">Шаги</div><div class="big">' + fmtSteps(steps) + '</div><div class="bar"><b style="width:' + pct + '%"></b></div><div class="small">из ' + fmtSteps(NORM) + ' · ' + pct + '%</div></button>';
+  h += '</div>';
+
+  h += '<div class="card" style="padding-bottom:8px"><div class="ctitle"><h2>План на сегодня</h2><span>с напоминаниями</span></div>';
+  if (!items.length) h += '<div class="empty">Пока пусто. Нажми плюс и добавь напоминание.</div>';
+  items.forEach(function (it) {
+    var on = !!state.done[k + '|' + it.r.id];
+    h += '<div class="task' + (on ? ' done' : '') + '"><button class="chk' + (on ? ' on' : '') + '" data-act="toggle" data-id="' + it.r.id + '" aria-label="Отметить: ' + esc(it.r.text) + '"><span>' + (on ? CHECK : '') + '</span></button><div class="tx">' + esc(it.r.text) + '</div><div class="tm">' + it.time + '</div></div>';
+  });
+  h += '</div>';
+
+  h += weekHTML(now);
+  return h;
+}
+
+function weekHTML(now) {
+  var start = addDays(now, -dayIdx(now)), tk = key(now), tIdx = dayIdx(now);
+  var X = 0, Y = 0, rows = '';
+  state.habits.forEach(function (hb) {
+    var cells = '';
+    for (var i = 0; i < 7; i++) {
+      var d = addDays(start, i), dk = key(d);
+      if (!hb.days[i]) { cells += '<div class="cell"></div>'; continue; }
+      var future = dk > tk;
+      var ok = !!(state.habitDone[hb.id] && state.habitDone[hb.id][dk]);
+      if (!future) { Y++; if (ok) X++; }
+      var cls = ok ? 'dot ok' : (future ? 'dot' : 'dot miss');
+      if (future) cells += '<div class="cell"><span class="' + cls + '"></span></div>';
+      else cells += '<button class="cell" data-act="hcell" data-id="' + hb.id + '" data-day="' + dk + '" aria-label="' + esc(hb.name) + ', ' + DAYFULL[i] + '"><span class="' + cls + '"></span></button>';
+    }
+    rows += '<div class="wk"><button class="name" data-act="hedit" data-id="' + hb.id + '">' + esc(hb.name) + '</button>' + cells + '</div>';
+  });
+  var head = '<div class="wk h"><div></div>';
+  for (var j = 0; j < 7; j++) head += '<div class="' + (j === tIdx ? 'today' : '') + '">' + DAYS[j] + '</div>';
+  head += '</div>';
+  return '<div class="card"><div class="ctitle"><h2>Неделя</h2><span class="wsum"><b>' + X + ' из ' + Y + '</b></span></div>' + head + rows + '<button class="addh" data-act="hadd">+ Привычка</button></div>';
+}
+
+function bannerHTML() {
+  if (!state.reminders.length) return '';
+  var standalone = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (ios && !standalone) return '<div class="banner"><div>Чтобы напоминания приходили, добавь Life на экран «Домой»: Поделиться → На экран «Домой».</div></div>';
+  if (!('Notification' in window)) return '';
+  if (Notification.permission === 'default') return '<div class="banner"><div>Разреши уведомления, чтобы напоминания приходили.</div><button data-act="notif">Включить</button></div>';
+  if (Notification.permission === 'denied') return '<div class="banner"><div>Уведомления выключены. Включи их в настройках телефона для Life.</div></div>';
+  return '';
+}
+
+/* ---------- вкладка напоминаний ---------- */
+function remindersHTML() {
+  var h = '<div class="head"><div class="logo">Напоминания</div></div>';
+  var list = state.reminders.slice().sort(function (a, b) {
+    var ta = a.kind === 'daily' ? a.time : hhmm(new Date(a.at));
+    var tb = b.kind === 'daily' ? b.time : hhmm(new Date(b.at));
+    if (a.kind !== b.kind) return a.kind === 'daily' ? -1 : 1;
+    return a.kind === 'daily' ? ta.localeCompare(tb) : a.at - b.at;
+  });
+  h += '<div class="card" style="padding-top:8px;padding-bottom:8px">';
+  if (!list.length) h += '<div class="empty">Напоминаний пока нет. Нажми плюс.</div>';
+  list.forEach(function (r) {
+    var past = r.kind === 'once' && r.at < Date.now();
+    h += '<div class="rem' + (past ? ' past' : '') + '"><div class="tx">' + esc(r.text) + '<div class="sub">' + fmtRem(r) + (past ? ' · прошло' : '') + '</div></div><button class="x" data-act="rdel" data-id="' + r.id + '" aria-label="Удалить: ' + esc(r.text) + '">×</button></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function render() {
+  $('#app').innerHTML = view === 'home' ? homeHTML() : remindersHTML();
+  $('#tab-home').classList.toggle('on', view === 'home');
+  $('#tab-rem').classList.toggle('on', view === 'rem');
+}
+
+/* ---------- окна ---------- */
+function openSheet(html) {
+  $('#layer').innerHTML = '<div class="overlay" data-act="overlay"><div class="sheet" role="dialog">' + html + '</div></div>';
+}
+function closeLayer() { $('#layer').innerHTML = ''; newS = null; habitTmp = null; }
+
+function stepsSheet() {
+  var k = key(new Date());
+  openSheet('<h3>Шаги сегодня</h3><input class="inp" id="stepsInp" type="number" inputmode="numeric" min="0" value="' + (state.steps[k] || '') + '" placeholder="Например, 7200"><div class="btnrow" style="margin-top:16px"><button data-act="close">Отмена</button><button class="go" data-act="stepsave">Сохранить</button></div>');
+  setTimeout(function () { var e = $('#stepsInp'); if (e) e.focus(); }, 50);
+}
+
+function habitSheet(id) {
+  var hb = state.habits.filter(function (x) { return x.id === id; })[0];
+  habitTmp = hb ? { id: hb.id, name: hb.name, days: hb.days.slice() } : { id: null, name: '', days: [1, 1, 1, 1, 1, 1, 1] };
+  drawHabitSheet();
+  setTimeout(function () { var e = $('#hname'); if (e && !habitTmp.id) e.focus(); }, 50);
+}
+function drawHabitSheet() {
+  var chips = '';
+  for (var i = 0; i < 7; i++) chips += '<button class="' + (habitTmp.days[i] ? 'on' : '') + '" data-act="hday" data-i="' + i + '" aria-pressed="' + (habitTmp.days[i] ? 'true' : 'false') + '" aria-label="' + DAYFULL[i] + '">' + DAYS[i] + '</button>';
+  openSheet('<h3>' + (habitTmp.id ? 'Привычка' : 'Новая привычка') + '</h3><label class="flabel" style="margin-top:0" for="hname">Название</label><input class="inp plain" id="hname" type="text" value="' + esc(habitTmp.name) + '" placeholder="Например, Спортзал"><span class="flabel">В какие дни считать</span><div class="chips" style="margin-top:8px">' + chips + '</div><div class="btnrow">' + (habitTmp.id ? '<button class="del" data-act="hdel">Удалить</button>' : '<button data-act="close">Отмена</button>') + '<button class="go" data-act="hsave">Сохранить</button></div>');
+}
+function readHabitName() { var e = $('#hname'); if (e && habitTmp) habitTmp.name = e.value; }
+
+/* ---------- новое напоминание ---------- */
+function openNew() {
+  var now = new Date();
+  var h = (now.getHours() + 1) % 24;
+  newS = { kind: 'once', mode: 'time', text: '', d: h === 0 ? 1 : 0, h: h, m: 0, th: 0, tm: 10 };
+  drawNew();
+}
+function range(n, f) { var a = []; for (var i = 0; i < n; i++) a.push(f(i)); return a; }
+function col(f, items, idx, flex) {
+  return '<div class="col" data-f="' + f + '" data-idx="' + idx + '" style="flex:' + flex + '"><div class="sp"></div>' + items.map(function (t, i) { return '<div class="it' + (i === idx ? ' sel' : '') + '">' + esc(t) + '</div>'; }).join('') + '<div class="sp"></div></div>';
+}
+function dateLabels() {
+  var t = new Date();
+  return range(30, function (i) {
+    if (i === 0) return 'Сегодня';
+    if (i === 1) return 'Завтра';
+    var d = addDays(t, i);
+    return WD[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()];
+  });
+}
+function hint() {
+  if (!newS) return '';
+  if (newS.kind === 'daily') return 'Будет приходить каждый день в ' + p2(newS.h) + ':' + p2(newS.m);
+  if (newS.mode === 'timer') {
+    var parts = [];
+    if (newS.th) parts.push(newS.th + ' ч');
+    if (newS.tm || !newS.th) parts.push(newS.tm + ' мин');
+    return 'Придёт через ' + parts.join(' ');
+  }
+  var lab = newS.d === 0 ? 'сегодня' : (newS.d === 1 ? 'завтра' : dateLabels()[newS.d]);
+  return 'Придёт ' + lab + ' в ' + p2(newS.h) + ':' + p2(newS.m);
+}
+function readWheels() {
+  document.querySelectorAll('#layer .col').forEach(function (c) {
+    var i = Math.max(0, Math.round(c.scrollTop / 44));
+    newS[c.getAttribute('data-f')] = i;
+  });
+  var t = $('#ntext'); if (t) newS.text = t.value;
+}
+function drawNew() {
+  var s = newS;
+  var wheel = '<div class="wheel"><div class="band"></div>';
+  if (s.kind === 'daily') {
+    wheel += col('h', range(24, p2), s.h, 1) + '<div class="colon">:</div>' + col('m', range(60, p2), s.m, 1);
+  } else if (s.mode === 'timer') {
+    wheel += col('th', range(24, function (i) { return i + ' ч'; }), s.th, 1) + col('tm', range(60, function (i) { return i + ' мин'; }), s.tm, 1);
+  } else {
+    wheel += col('d', dateLabels(), s.d, 2.2) + col('h', range(24, p2), s.h, 1) + '<div class="colon">:</div>' + col('m', range(60, p2), s.m, 1);
+  }
+  wheel += '</div>';
+  var when = s.kind === 'daily' ? '<span class="flabel">Во сколько</span>' : '<div class="seg sub"><button class="' + (s.mode === 'time' ? 'on' : '') + '" data-act="nmode" data-v="time">Время</button><button class="' + (s.mode === 'timer' ? 'on' : '') + '" data-act="nmode" data-v="timer">Таймер</button></div>';
+  var btn = s.kind === 'once' && s.mode === 'timer' ? 'Запустить таймер' : 'Создать напоминание';
+  $('#layer').innerHTML = '<div class="screen"><div class="in"><button class="cancel" data-act="close">Отмена</button><h1 class="ttl">Новое напоминание</h1>' +
+    '<div class="seg"><button class="' + (s.kind === 'once' ? 'on' : '') + '" data-act="nkind" data-v="once">Разовое</button><button class="' + (s.kind === 'daily' ? 'on' : '') + '" data-act="nkind" data-v="daily">Каждый день</button></div>' +
+    '<label class="flabel" for="ntext">Что напомнить</label><input class="inp" id="ntext" type="text" maxlength="120" placeholder="Например, Английский, 20 минут" value="' + esc(s.text) + '">' +
+    when + wheel + '<div class="hint" id="nhint">' + hint() + '</div><div class="spacer"></div><button class="primary" data-act="ncreate">' + btn + '</button></div></div>';
+  document.querySelectorAll('#layer .col').forEach(function (c) {
+    var idx = parseInt(c.getAttribute('data-idx'), 10);
+    c.scrollTop = idx * 44;
+    var raf = 0;
+    c.addEventListener('scroll', function () {
+      if (raf) return;
+      raf = requestAnimationFrame(function () {
+        raf = 0;
+        var i = Math.max(0, Math.round(c.scrollTop / 44));
+        var items = c.querySelectorAll('.it');
+        for (var j = 0; j < items.length; j++) items[j].classList.toggle('sel', j === i);
+        newS[c.getAttribute('data-f')] = i;
+        var hn = $('#nhint'); if (hn) hn.textContent = hint();
+      });
+    });
+  });
+}
+function createReminder() {
+  readWheels();
+  var s = newS, text = s.text.trim();
+  if (!text) { toast('Напиши, что напомнить'); var t = $('#ntext'); if (t) t.focus(); return; }
+  var r = { id: uid(), text: text, created: Date.now() };
+  if (s.kind === 'daily') { r.kind = 'daily'; r.time = p2(s.h) + ':' + p2(s.m); }
+  else if (s.mode === 'timer') {
+    var mins = s.th * 60 + s.tm;
+    if (!mins) { toast('Поставь время таймера'); return; }
+    r.kind = 'once'; r.at = Date.now() + mins * 60000; r.at -= r.at % 60000;
+  } else {
+    var d = addDays(new Date(), s.d); d.setHours(s.h, s.m, 0, 0);
+    if (d.getTime() <= Date.now()) { toast('Это время уже прошло'); return; }
+    r.kind = 'once'; r.at = d.getTime();
+  }
+  state.reminders.push(r); save();
+  closeLayer(); render(); toast('Напоминание создано');
+  if ('Notification' in window && Notification.permission === 'default') toast('Разреши уведомления кнопкой «Включить»');
+}
+
+/* ---------- уведомления ---------- */
+var toastT = 0;
+function toast(msg) {
+  var t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 3500);
+}
+function fire(r, slotKey) {
+  var day = key(new Date());
+  toast('🔔 ' + r.text);
+  if ('Notification' in window && Notification.permission === 'granted' && navigator.serviceWorker) {
+    navigator.serviceWorker.ready.then(function (reg) {
+      reg.showNotification(r.text, {
+        body: 'Напоминание Life', tag: slotKey, icon: 'icon-192.png', badge: 'icon-192.png',
+        data: { id: r.id, day: day }, actions: [{ action: 'done', title: 'Сделано' }]
+      });
+    }).catch(function () {});
+  }
+}
+function tick() {
+  var now = Date.now(), changed = false, d = new Date(), k = key(d);
+  state.reminders.forEach(function (r) {
+    var at, slot;
+    if (r.kind === 'once') { at = r.at; slot = 'o|' + r.id; }
+    else { var p = r.time.split(':'); var x = new Date(); x.setHours(+p[0], +p[1], 0, 0); at = x.getTime(); slot = k + '|' + r.id; }
+    if (at <= now && now - at < 6 * 3600000 && !state.fired[slot]) {
+      state.fired[slot] = 1; changed = true; fire(r, slot);
+    }
+  });
+  if (changed) { save(); if (!newS && !habitTmp) render(); }
+}
+
+function markDone(id, day) {
+  var k = (day || key(new Date())) + '|' + id;
+  state.done[k] = true; save(); render();
+}
+
+/* ---------- события ---------- */
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('[data-act]');
+  if (!el) return;
+  var a = el.getAttribute('data-act');
+  if (a === 'overlay') { if (e.target === el) closeLayer(); return; }
+  if (a === 'close') { closeLayer(); return; }
+  if (a === 'tab') { view = el.getAttribute('data-v'); render(); window.scrollTo(0, 0); return; }
+  if (a === 'fab') { openNew(); return; }
+  if (a === 'toggle') {
+    var k = key(new Date()) + '|' + el.getAttribute('data-id');
+    if (state.done[k]) delete state.done[k]; else state.done[k] = true;
+    save(); render(); return;
+  }
+  if (a === 'hcell') {
+    var id = el.getAttribute('data-id'), dk = el.getAttribute('data-day');
+    state.habitDone[id] = state.habitDone[id] || {};
+    if (state.habitDone[id][dk]) delete state.habitDone[id][dk]; else state.habitDone[id][dk] = true;
+    save(); render(); return;
+  }
+  if (a === 'hedit') { habitSheet(el.getAttribute('data-id')); return; }
+  if (a === 'hadd') { habitSheet(null); return; }
+  if (a === 'hday') { readHabitName(); var i = +el.getAttribute('data-i'); habitTmp.days[i] = habitTmp.days[i] ? 0 : 1; drawHabitSheet(); return; }
+  if (a === 'hsave') {
+    readHabitName();
+    var nm = habitTmp.name.trim();
+    if (!nm) { toast('Напиши название'); return; }
+    if (!habitTmp.days.some(function (x) { return x; })) { toast('Выбери хотя бы один день'); return; }
+    if (habitTmp.id) { state.habits.forEach(function (h) { if (h.id === habitTmp.id) { h.name = nm; h.days = habitTmp.days.slice(); } }); }
+    else state.habits.push({ id: uid(), name: nm, days: habitTmp.days.slice() });
+    save(); closeLayer(); render(); return;
+  }
+  if (a === 'hdel') {
+    if (confirm('Удалить привычку «' + habitTmp.name + '» вместе с отметками?')) {
+      state.habits = state.habits.filter(function (h) { return h.id !== habitTmp.id; });
+      delete state.habitDone[habitTmp.id];
+      save(); closeLayer(); render();
+    }
+    return;
+  }
+  if (a === 'steps') { stepsSheet(); return; }
+  if (a === 'stepsave') {
+    var v = parseInt($('#stepsInp').value, 10);
+    if (isNaN(v) || v < 0) { toast('Введи число шагов'); return; }
+    state.steps[key(new Date())] = v; save(); closeLayer(); render(); return;
+  }
+  if (a === 'notif') {
+    Notification.requestPermission().then(function () { render(); });
+    return;
+  }
+  if (a === 'rdel') {
+    var rid = el.getAttribute('data-id');
+    var rr = state.reminders.filter(function (x) { return x.id === rid; })[0];
+    if (rr && confirm('Удалить напоминание «' + rr.text + '»?')) {
+      state.reminders = state.reminders.filter(function (x) { return x.id !== rid; });
+      save(); render();
+    }
+    return;
+  }
+  if (a === 'nkind') { readWheels(); newS.kind = el.getAttribute('data-v'); if (newS.kind === 'daily' && newS.h === (new Date().getHours() + 1) % 24 && newS.m === 0) { newS.h = 22; } drawNew(); return; }
+  if (a === 'nmode') { readWheels(); newS.mode = el.getAttribute('data-v'); drawNew(); return; }
+  if (a === 'ncreate') { createReminder(); return; }
+});
+
+document.addEventListener('visibilitychange', function () { if (!document.hidden) { render(); tick(); } });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function () {});
+  navigator.serviceWorker.addEventListener('message', function (e) {
+    if (e.data && e.data.type === 'done') markDone(e.data.id, e.data.day);
+  });
+}
+
+/* параметры ссылки: ?steps=7200 (для быстрой команды iPhone), ?done=id&day=дата (из уведомления) */
+(function () {
+  var q = new URLSearchParams(location.search), touched = false;
+  if (q.has('steps')) { var n = parseInt(q.get('steps'), 10); if (!isNaN(n) && n >= 0) { state.steps[key(new Date())] = n; touched = true; } }
+  if (q.has('done')) { state.done[(q.get('day') || key(new Date())) + '|' + q.get('done')] = true; touched = true; }
+  if (touched) { save(); history.replaceState(null, '', location.pathname); }
+})();
+
+render();
+tick();
+setInterval(tick, 15000);
+})();
+</script>
+</body>
+</html>
