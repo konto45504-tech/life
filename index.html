@@ -70,6 +70,15 @@ input{font:inherit}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;z-index:50}
 .sheet{width:100%;max-width:430px;background:#111;border-radius:24px 24px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
 .sheet h3{margin:0 0 16px;font-size:20px}
+.sheet{max-height:92vh;overflow-y:auto}
+.st{display:flex;gap:6px;align-items:flex-end;height:96px;margin-top:12px}
+.st div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--muted)}
+.st i{display:block;width:100%;border-radius:5px;background:var(--dim);min-height:3px}
+.st i.ok{background:var(--acc)}
+.st div.td{color:var(--text)}
+.sgrid{display:flex;gap:10px;margin-top:14px}
+.sgrid div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:12px;color:var(--muted)}
+.sgrid b{display:block;font-size:18px;color:var(--text);margin-bottom:2px}
 .screen{position:fixed;inset:0;background:var(--bg);z-index:40;overflow:auto}
 .screen .in{max-width:430px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 12px) 20px calc(28px + env(safe-area-inset-bottom));min-height:100%;display:flex;flex-direction:column}
 .cancel{min-height:44px;color:var(--muted);font-size:15px;align-self:flex-start}
@@ -217,9 +226,10 @@ function fmtSteps(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); 
 /* ---------- главный экран ---------- */
 function homeHTML() {
   var now = new Date(), k = key(now), items = todayItems();
-  var total = items.length;
-  var doneN = items.filter(function (i) { return state.done[k + '|' + i.r.id]; }).length;
   var steps = state.steps[k] || 0, pct = Math.min(100, Math.round(steps / NORM * 100));
+  var stepsOk = steps >= NORM;
+  var total = items.length + 1;
+  var doneN = items.filter(function (i) { return state.done[k + '|' + i.r.id]; }).length + (stepsOk ? 1 : 0);
   var segs = '', n = Math.min(total, 12), onN = total <= 12 ? doneN : Math.round(doneN / total * n);
   for (var i = 0; i < n; i++) segs += '<i class="' + (i < onN ? 'on' : '') + '"></i>';
   if (!n) segs = '<i></i>';
@@ -233,7 +243,7 @@ function homeHTML() {
   h += '</div>';
 
   h += '<div class="card" style="padding-bottom:8px"><div class="ctitle"><h2>План на сегодня</h2><span>с напоминаниями</span></div>';
-  if (!items.length) h += '<div class="empty">Пока пусто. Нажми плюс и добавь напоминание.</div>';
+  h += '<div class="task' + (stepsOk ? ' done' : '') + '"><button class="chk' + (stepsOk ? ' on' : '') + '" data-act="steps" aria-label="Шаги: ' + fmtSteps(steps) + ' из ' + fmtSteps(NORM) + '"><span>' + (stepsOk ? CHECK : '') + '</span></button><div class="tx">' + fmtSteps(NORM) + ' шагов<br><span style="display:inline-block;font-size:12px;color:var(--muted);font-weight:400">сейчас ' + fmtSteps(steps) + '</span></div><div class="tm">за день</div></div>';
   items.forEach(function (it) {
     var on = !!state.done[k + '|' + it.r.id];
     h += '<div class="task' + (on ? ' done' : '') + '"><button class="chk' + (on ? ' on' : '') + '" data-act="toggle" data-id="' + it.r.id + '" aria-label="Отметить: ' + esc(it.r.text) + '"><span>' + (on ? CHECK : '') + '</span></button><div class="tx">' + esc(it.r.text) + '</div><div class="tm">' + it.time + '</div></div>';
@@ -309,9 +319,24 @@ function openSheet(html) {
 }
 function closeLayer() { $('#layer').innerHTML = ''; newS = null; habitTmp = null; }
 
+function stepsStats() {
+  var now = new Date(), days = [], vals = [], mx = NORM;
+  for (var i = 6; i >= 0; i--) { var d = addDays(now, -i), v = state.steps[key(d)] || 0; days.push(d); vals.push(v); if (v > mx) mx = v; }
+  var bars = '';
+  vals.forEach(function (v, i) {
+    var hgt = Math.max(3, Math.round(v / mx * 72));
+    bars += '<div class="' + (i === 6 ? 'td' : '') + '"><span style="margin-bottom:4px">' + (v ? (v >= 1000 ? (Math.round(v / 100) / 10) + 'к' : v) : '') + '</span><i class="' + (v >= NORM ? 'ok' : '') + '" style="height:' + hgt + 'px"></i><span style="margin-top:4px">' + DAYS[dayIdx(days[i])] + '</span></div>';
+  });
+  var all = Object.keys(state.steps).filter(function (x) { return state.steps[x] > 0; });
+  var last7 = vals.filter(function (v) { return v > 0; });
+  var avg = last7.length ? Math.round(last7.reduce(function (a, b) { return a + b; }, 0) / last7.length) : 0;
+  var hit7 = vals.filter(function (v) { return v >= NORM; }).length;
+  var best = all.reduce(function (m, x) { return Math.max(m, state.steps[x]); }, 0);
+  return '<span class="flabel">Последние 7 дней</span><div class="st">' + bars + '</div><div class="sgrid"><div><b>' + fmtSteps(avg) + '</b>среднее</div><div><b>' + hit7 + ' из 7</b>дней с нормой</div><div><b>' + fmtSteps(best) + '</b>рекорд</div></div>';
+}
 function stepsSheet() {
   var k = key(new Date());
-  openSheet('<h3>Шаги сегодня</h3><input class="inp" id="stepsInp" type="number" inputmode="numeric" min="0" value="' + (state.steps[k] || '') + '" placeholder="Например, 7200"><div class="btnrow" style="margin-top:16px"><button data-act="close">Отмена</button><button class="go" data-act="stepsave">Сохранить</button></div><span class="flabel">Код для Быстрой команды</span><div style="margin-top:8px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:15px;word-break:break-all;user-select:all;-webkit-user-select:all" id="tokbox">' + state.token + '</div><div class="btnrow"><button data-act="copytok">Скопировать код</button></div>');
+  openSheet('<h3>Шаги сегодня</h3><input class="inp" id="stepsInp" type="number" inputmode="numeric" min="0" value="' + (state.steps[k] || '') + '" placeholder="Например, 7200"><div class="btnrow" style="margin-top:16px"><button data-act="close">Отмена</button><button class="go" data-act="stepsave">Сохранить</button></div>' + stepsStats() + '<span class="flabel">Код для Быстрой команды</span><div style="margin-top:8px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:15px;word-break:break-all;user-select:all;-webkit-user-select:all" id="tokbox">' + state.token + '</div><div class="btnrow"><button data-act="copytok">Скопировать код</button></div>');
   setTimeout(function () { var e = $('#stepsInp'); if (e) e.focus(); }, 50);
 }
 
