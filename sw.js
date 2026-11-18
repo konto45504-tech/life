@@ -1,4 +1,4 @@
-var CACHE = 'life-v1';
+var CACHE = 'life-v2';
 var ASSETS = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
@@ -30,4 +30,13 @@ self.addEventListener('notificationclick', function (e) {
     var url = e.action === 'done' ? './?done=' + encodeURIComponent(d.id) + '&day=' + encodeURIComponent(d.day) : './';
     await self.clients.openWindow(url);
   })());
+});
+
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data.json(); } catch (x) {}
+  e.waitUntil(self.registration.showNotification(d.title || 'Life', {
+    body: d.body || '', tag: d.tag, icon: 'icon-192.png', badge: 'icon-192.png',
+    data: { id: d.id, day: d.day }, actions: [{ action: 'done', title: 'Сделано' }]
+  }));
 });

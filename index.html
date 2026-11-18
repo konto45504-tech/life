@@ -157,7 +157,41 @@ function load() {
   };
 }
 var state = load();
-function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+if (!state.token) { state.token = (function () { var a = new Uint8Array(24); crypto.getRandomValues(a); return Array.prototype.map.call(a, function (b) { return 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]; }).join(''); })(); try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} syncSoon(); }
+
+/* ---------- сервер (Supabase): пуши и шаги ---------- */
+var API = 'https://drchtaqfsnopokxaohsr.supabase.co/functions/v1/life';
+var VAPID = 'BASVQ-O41xyTmEU49h5fKPswXaBnjhtVUbPA3X9KBNOJRhI4HFJf1i0hoYoZSt3-51NLa4Ot8zK9wFH7xVsUyg8';
+var syncT = 0;
+function syncSoon() { clearTimeout(syncT); syncT = setTimeout(syncNow, 800); }
+function b64u(s) { var p = '='.repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), o = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) o[i] = r.charCodeAt(i); return o; }
+function getSub(create) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window) || Notification.permission !== 'granted') return Promise.resolve(null);
+  return navigator.serviceWorker.ready.then(function (reg) {
+    return reg.pushManager.getSubscription().then(function (sub) {
+      if (sub || !create) return sub;
+      return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID) });
+    });
+  }).catch(function () { return null; });
+}
+function syncNow(create) {
+  return getSub(create).then(function (sub) {
+    var body = {
+      token: state.token, tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Warsaw'),
+      reminders: state.reminders.map(function (r) { return { id: r.id, text: r.text, kind: r.kind, at: r.at, time: r.time }; })
+    };
+    if (sub) body.sub = sub.toJSON();
+    return fetch(API + '/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }).catch(function () {});
+}
+function pullSteps() {
+  fetch(API + '/pull?token=' + encodeURIComponent(state.token)).then(function (r) { return r.json(); }).then(function (j) {
+    var ch = false;
+    (j.steps || []).forEach(function (x) { if (state.steps[x.day] !== x.steps) { state.steps[x.day] = x.steps; ch = true; } });
+    if (ch) { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} if (!newS && !habitTmp && !document.querySelector('.sheet')) render(); }
+  }).catch(function () {});
+}
 
 var view = 'home';
 var newS = null;
@@ -277,7 +311,7 @@ function closeLayer() { $('#layer').innerHTML = ''; newS = null; habitTmp = null
 
 function stepsSheet() {
   var k = key(new Date());
-  openSheet('<h3>Шаги сегодня</h3><input class="inp" id="stepsInp" type="number" inputmode="numeric" min="0" value="' + (state.steps[k] || '') + '" placeholder="Например, 7200"><div class="btnrow" style="margin-top:16px"><button data-act="close">Отмена</button><button class="go" data-act="stepsave">Сохранить</button></div>');
+  openSheet('<h3>Шаги сегодня</h3><input class="inp" id="stepsInp" type="number" inputmode="numeric" min="0" value="' + (state.steps[k] || '') + '" placeholder="Например, 7200"><div class="btnrow" style="margin-top:16px"><button data-act="close">Отмена</button><button class="go" data-act="stepsave">Сохранить</button></div><span class="flabel">Код для Быстрой команды</span><div style="margin-top:8px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:15px;word-break:break-all;user-select:all;-webkit-user-select:all" id="tokbox">' + state.token + '</div><div class="btnrow"><button data-act="copytok">Скопировать код</button></div>');
   setTimeout(function () { var e = $('#stepsInp'); if (e) e.focus(); }, 50);
 }
 
@@ -464,13 +498,14 @@ document.addEventListener('click', function (e) {
     return;
   }
   if (a === 'steps') { stepsSheet(); return; }
+  if (a === 'copytok') { try { navigator.clipboard.writeText(state.token).then(function () { toast('Код скопирован'); }, function () { toast('Зажми код и скопируй'); }); } catch (e) { toast('Зажми код и скопируй'); } return; }
   if (a === 'stepsave') {
     var v = parseInt($('#stepsInp').value, 10);
     if (isNaN(v) || v < 0) { toast('Введи число шагов'); return; }
     state.steps[key(new Date())] = v; save(); closeLayer(); render(); return;
   }
   if (a === 'notif') {
-    Notification.requestPermission().then(function () { render(); });
+    Notification.requestPermission().then(function () { return syncNow(true); }).then(function () { render(); toast(Notification.permission === 'granted' ? 'Пуши включены' : 'Уведомления не разрешены'); });
     return;
   }
   if (a === 'rdel') {
@@ -487,7 +522,7 @@ document.addEventListener('click', function (e) {
   if (a === 'ncreate') { createReminder(); return; }
 });
 
-document.addEventListener('visibilitychange', function () { if (!document.hidden) { render(); tick(); } });
+document.addEventListener('visibilitychange', function () { if (!document.hidden) { render(); tick(); pullSteps(); syncNow(); } });
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function () {});
@@ -507,6 +542,7 @@ if ('serviceWorker' in navigator) {
 render();
 tick();
 setInterval(tick, 15000);
+syncNow(true); pullSteps();
 })();
 </script>
 </body>
